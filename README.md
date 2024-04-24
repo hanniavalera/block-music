@@ -1,6 +1,4 @@
-# Real-Time Text Recognition from Webcam Feed
-
-This Python script captures video from a webcam and uses Tesseract OCR to perform real-time text recognition on the video feed. It's ideal for educational purposes, interactive installations, or any application that requires instant text detection from a live camera feed.
+# Block Music
 
 ## Prerequisites
 
