@@ -4,6 +4,7 @@ import os
 from pydub import AudioSegment
 from pydub.generators import Sine
 import simpleaudio as sa
+import numpy as np
 
 # Define frequency mappings for pitches
 pitch_mappings = {
@@ -13,7 +14,7 @@ pitch_mappings = {
 }
 
 # Default values
-default_pitch = 1
+default_pitch = 2
 default_repeat = 2
 
 # Function to play a single note with a specific pitch
@@ -26,65 +27,72 @@ def play_note(pitch, duration=500):  # Default duration 500ms
 
 # Initialize the camera
 cap = cv2.VideoCapture(0)
-# set to a reduced frame rate as nothing will essentially be moving in the frame
-cap.set(cv2.CAP_PROP_FPS, 10)
+cap.set(cv2.CAP_PROP_FPS, 1)
+# use the full resolution of the camera
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+
+text_lengths = []
 
 while True:
-    # Capture frame-by-frame
     ret, frame = cap.read()
     if not ret:
         break
 
-    # Convert the frame to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # Perform OCR using Tesseract on the grayscale image
     config = '--psm 6'  # Assume a single uniform block of text.
     text = pytesseract.image_to_string(gray, config=config)
     print("Recognized text:", text)
 
-    # Normalize and split the text
-    commands = text.upper().split()
-    i = 0
-    while i < len(commands):
-        cmd = commands[i]
-        if "NOTE" in cmd:
-            # Check for subsequent pitch specification
-            pitch = default_pitch
-            if i + 1 < len(commands) and "PITCH" in commands[i+1]:
-                pitch = int(commands[i+1][-1])
-                i += 1
-            play_note(pitch)
-        elif "BEGIN" in cmd and "LOOP" in cmd:
-            loop_start = i
-        elif "END" in cmd and "LOOP" in cmd:
-            loop_end = i
-            repeat_count = default_repeat
-            # Look for repeat specification
-            if i + 1 < len(commands) and "REPEAT:" in commands[i+1]:
-                repeat_count = int(commands[i+1].split(":")[1])
-                i += 1
-            # Execute the loop
-            for _ in range(repeat_count):
-                j = loop_start + 1
-                while j < loop_end:
-                    if "NOTE" in commands[j]:
+    current_length = len(text.replace(" ", ""))  # Consider non-space characters only
+    text_lengths.append(current_length)
+    commands = []
+    if len(text_lengths) > 1 and current_length > np.mean(text_lengths[:-1]):
+        commands = text.upper().split()
+        i = 0
+        while i < len(commands):
+            cmd = commands[i]
+            if "NOTE" in cmd:
+                pitch = default_pitch
+                if i + 1 < len(commands) and "PITCH" in commands[i+1]:
+                    try:
+                        pitch = int(commands[i+1].split(' ')[-1])
+                    except ValueError:
                         pitch = default_pitch
-                        if j + 1 < len(commands) and "PITCH" in commands[j+1]:
-                            pitch = int(commands[j+1][-1])
-                            j += 1
-                        play_note(pitch)
-                    j += 1
-            i = loop_end
-        i += 1
+                    i += 1
+                play_note(pitch)
+            elif "BEGIN" in cmd and "LOOP" in cmd:
+                loop_start = i
+                repeat_count = default_repeat  # Set default repeat count
+                while i < len(commands) and "END" not in commands[i]:
+                    i += 1
+                    if "REPEAT:" in commands[i]:
+                        try:
+                            repeat_count = int(commands[i].split(":")[1])
+                        except ValueError:
+                            repeat_count = default_repeat
+                for _ in range(repeat_count):
+                    j = loop_start + 1
+                    while j < i:
+                        if "NOTE" in commands[j]:
+                            pitch = default_pitch
+                            if j + 1 < len(commands) and "PITCH" in commands[j+1]:
+                                try:
+                                    pitch = int(commands[j+1].split(' ')[-1])
+                                except ValueError:
+                                    pitch = default_pitch
+                                j += 1
+                            play_note(pitch)
+                        j += 1
+                # omit the begin, end and repeat commands from the list, so we can end the loop
+                commands = commands[:loop_start] + commands[i+1:]
+                i = loop_start - 1
+            i += 1
 
-    # Display the resulting frame
     cv2.imshow('Frame', frame)
-
-    # Break the loop with 'q'
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# When everything is done, release the capture
 cap.release()
 cv2.destroyAllWindows()
+print("Program ended.")
