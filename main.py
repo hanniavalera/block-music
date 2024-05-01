@@ -28,6 +28,7 @@ def play_note(pitch, duration=500):  # Default duration 500ms
 # Initialize the camera
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FPS, 1)
+# use the full resolution of the camera
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
@@ -38,20 +39,16 @@ while True:
     if not ret:
         break
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # OCR configuration and text extraction
-    config = '--psm 4'  # Optimal for reading from top to bottom
+    config = '--psm 6'  # Assume a single uniform block of text.
     text = pytesseract.image_to_string(gray, config=config)
     print("Recognized text:", text)
 
     current_length = len(text.replace(" ", ""))  # Consider non-space characters only
     text_lengths.append(current_length)
-
+    commands = []
     if len(text_lengths) > 1 and current_length > np.mean(text_lengths[:-1]):
         commands = text.upper().split()
         i = 0
-        processed_all_commands = True  # Flag to check if all commands are processed
-
         while i < len(commands):
             cmd = commands[i]
             if "NOTE" in cmd:
@@ -86,15 +83,10 @@ while True:
                                 j += 1
                             play_note(pitch)
                         j += 1
+                # omit the begin, end and repeat commands from the list, so we can end the loop
                 commands = commands[:loop_start] + commands[i+1:]
                 i = loop_start - 1
-            else:
-                processed_all_commands = False
             i += 1
-
-        if processed_all_commands:
-            print("Processed all commands, exiting program.")
-            break
 
     cv2.imshow('Frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
