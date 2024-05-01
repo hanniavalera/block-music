@@ -6,6 +6,9 @@
 - OpenCV (`cv2` library)
 - Pytesseract
 - Tesseract OCR
+- Pydub
+- Numpy
+- Simpleaudio
 
 ## Installation
 
@@ -13,7 +16,7 @@
 
 2. **Install the required Python libraries**
 
-3. **Install Tesseract OCR**
+3. **Install Tesseract OCR and Pytesseract, Numpy, Simpleaudio, and Pydub - use pip**
 
 
 ## How It Works
