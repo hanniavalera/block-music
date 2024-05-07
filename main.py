@@ -58,7 +58,7 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 start_time = time.time()
 text_lengths = []
 
-while time.time() - start_time < 60:  # Run for a minute
+while time.time() - start_time < 120:  # Run for a minute
     ret, frame = cap.read()
     if not ret:
         break
