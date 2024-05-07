@@ -6,11 +6,12 @@ from pydub.generators import Sine
 import numpy as np
 import time
 
-# Setup initial configurations
-pitch_mappings = {'ONE': 440, 'TWO': 494, 'THREE': 523, 'FOUR': 587, 'FIVE': 659, 'SIX': 698, 'SEVEN': 784}
+# Setup initial configurations - make it like do, re, mi, fa, so, la, ti
+pitch_mappings = {'ONE': 261.63, 'TWO': 293.66, 'THREE': 329.63, 'FOUR': 349.23, 'FIVE': 392.00, 'SIX': 440.00, 'SEVEN': 493.88}
 number_map = {'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5, 'SIX': 6, 'SEVEN': 7}
 default_repeat = 2
-default_pitch = 'TWO'
+# randomize pitch for default from one to three
+default_pitch = np.random.choice(['ONE', 'TWO', 'THREE'])
 command_keywords = ["START", "NOTE", "BEGIN LOOP", "STOP LOOP", "END", "PITCH", "REPEAT"]
 threshold = 3
 
@@ -50,7 +51,10 @@ def process_commands(commands, words, index):
         for keyword in command_keywords:
             if minDistance(word, keyword) <= threshold:
                 if "BEGIN LOOP" in keyword:
-                    index, _ = process_commands(commands, words, index + 1)  # Recursive call for nested loops
+                    # you will look for the repeat if any and if not default to 2
+                    repeat = next((w for w in words[index+1:index+3] if w in number_map), default_repeat)
+                    for _ in range(number_map.get(repeat, default_repeat)):
+                        process_commands(commands, words, index+1)
                 elif "STOP LOOP" in keyword:
                     return index, False
                 elif "NOTE" in keyword:
@@ -60,7 +64,7 @@ def process_commands(commands, words, index):
     return index, False
 
 cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FPS, 10)  # Limiting to 10 frames per second
+# cap.set(cv2.CAP_PROP_FPS, 10)  # Limiting to 10 frames per second
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
@@ -74,6 +78,7 @@ while time.time() - start_time < 120:  # Run for a minute
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     text = pytesseract.image_to_string(gray, config='--psm 6')
     words = text.upper().split()
+
     current_length = len(words)
 
     if len(text_lengths) > 10:  # Use last 10 frames to get a stable average
