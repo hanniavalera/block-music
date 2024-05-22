@@ -1,10 +1,10 @@
-import cv2
 import pytesseract
 import simpleaudio as sa
 import numpy as np
 import time
 import os
 from collections import deque
+import openai
 
 # Setup initial configurations - make it like do, re, mi, fa, so, la, ti
 pitch_mappings = {'ONE': 261.63, 'TWO': 293.66, 'THREE': 329.63, 'FOUR': 349.23, 'FIVE': 392.00, 'SIX': 440.00, 'SEVEN': 493.88}
@@ -13,6 +13,13 @@ default_repeat = 2
 default_pitch = np.random.choice(['ONE', 'TWO', 'THREE'])
 command_keywords = ["START", "NOTE", "BEGIN LOOP", "STOP LOOP", "END", "PITCH", "REPEAT"]
 threshold = 3
+
+def recognize_text_from_image(file_path):
+    openai.api_key = os.getenv('OPENAI_API_KEY')
+    with open(file_path, 'rb') as image_file:
+        image_data = image_file.read()
+    response = openai.Image.create(file={"name": "tmp.img", "content": image_data}, purpose="feature-extraction")
+    return response['choices'][0]['text']
 
 def generate_sine_wave(frequency, duration, sample_rate=44100, amplitude=0.5):
     t = np.linspace(0, duration, int(sample_rate * duration), False)
@@ -50,13 +57,10 @@ def minDistance(word1, word2):
 def process_commands(commands, words, index):
     while index < len(words):
         word = words[index]
-        print(f"Processing word: {word}")  # Debugging statement
         if ('END' in word or word not in command_keywords) and index >= len(words) * 4 / 5:
-            print("End command found or invalid command")  # Debugging statement
             return index, True  # Signal to end the program
         for keyword in command_keywords:
             if minDistance(word, keyword) <= threshold:
-                print(f"Keyword matched: {keyword}")  # Debugging statement
                 if "BEGIN LOOP" in keyword:
                     repeat = next((w for w in words[index+1:index+3] if w in number_map), default_repeat)
                     repeat_count = number_map.get(repeat, default_repeat)
@@ -72,48 +76,13 @@ def process_commands(commands, words, index):
         index += 1
     return index, False
 
-cap = cv2.VideoCapture(1)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+file_path = 'tmp.img'
+text = recognize_text_from_image(file_path)
+words = text.upper().split()
 
-start_time = time.time()
-text_frames = []
-command_queue = deque()  # Queue to process commands
-
-while time.time() - start_time < 120:  # Run for two minutes
-    ret, frame = cap.read()
-    if not ret:
-        break
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    text = pytesseract.image_to_string(gray, config='--psm 6')
-    words = text.upper().split()
-
-    text_frames.append(words)
-    print(f"Captured text: {words}")  # Debugging statement
-
-    if len(text_frames) > 10:  # Use last 10 frames to get a stable average
-        avg_length = sum(len(f) for f in text_frames[-10:]) / 10
-    else:
-        avg_length = sum(len(f) for f in text_frames) / len(text_frames) if text_frames else 0
-
-    # Find the frame with length closest to the average
-    if len(text_frames) >= 10:
-        closest_frame = min(text_frames, key=lambda x: abs(len(x) - avg_length))
-        text_frames = text_frames[-10:]  # Keep only the last 10 frames for averaging
-
-        commands = []
-        index, should_end = process_commands(commands, closest_frame, 0)
-        command_queue.extend(commands)  # Add commands to the queue
-        if should_end:
-            break
-
-    cv2.imshow('Frame', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
-print("Program ended.")
+commands = []
+index, should_end = process_commands(commands, words, 0)
+command_queue = deque(commands)  # Add commands to the queue
 
 # Process commands from the queue
 while command_queue:
