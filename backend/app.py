@@ -67,7 +67,9 @@ def recognize_text_from_image(file_path):
                             "- STOP LOOP marks the end of a loop.\n"
                             "- NOTE specifies a musical note and can have an attached PITCH (ONE TO SEVEN).\n"
                             "- REPEAT specifies how many times a NOTE should be played (ONE TO SEVEN).\n"
-                            "Please interpret the image, extract the notes and pitches that would result from running the program, and provide the output as 'NOTE, PITCH' pairs in a comma-separated list with no additional explanation at all. If there is no PITCH specified, assume the default pitch is ONE, and have the numbers spelled out in all uppercase.\n"
+                            "Please interpret the image, extract the notes and pitches that would result from running the program.\n"
+                            "Provice a sequence of pairs in the format NOTE PITCH, in which NOTE stays the same and PITCH is a number from ONE to SEVEN.\n"
+                            "Output the sequence solely as a comma-separated list with NOTE PITCH with no additional explanation.\n"
                         )
                     },
                     {
@@ -115,6 +117,14 @@ def save_note_to_file(pitch, duration, file_path):
         wav_file.setframerate(44100)
         wav_file.writeframes(audio.tobytes())
 
+def find_pitch_word(string_list, pitch_mappings):
+    for string in string_list:
+        words = string.split()
+        for word in words:
+            if word in pitch_mappings:
+                return word
+    return None
+
 def process_image_to_music(file_path):
     text = recognize_text_from_image(file_path)
     # Split the recognized text into a list of commands
@@ -130,7 +140,8 @@ def process_image_to_music(file_path):
     for command in commands:
         command = command.strip()
         if command.startswith("NOTE"):
-            pitch = command.split()[1] if len(command.split()) > 1 else default_pitch
+            # find the number within the command string, if not do default pitch
+            pitch = find_pitch_word(command.split(), pitch_mappings) or default_pitch
             note_file_path = os.path.join(MUSIC_FOLDER, f"note_{uuid.uuid4()}.wav")
             save_note_to_file(pitch, 1, note_file_path)
             with wave.open(note_file_path, 'rb') as note_file:
