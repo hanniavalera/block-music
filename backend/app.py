@@ -68,7 +68,7 @@ def recognize_text_from_image(file_path):
                             "- NOTE specifies a musical note and can have an attached PITCH (ONE TO SEVEN).\n"
                             "- REPEAT specifies how many times a NOTE should be played (ONE TO SEVEN).\n"
                             "Please interpret the image, extract the notes and pitches that would result from running the program.\n"
-                            "Provice a sequence of pairs in the format NOTE PITCH, in which NOTE stays the same and PITCH is a number from ONE to SEVEN.\n"
+                            "Provide a sequence of pairs in the format NOTE PITCH, in which NOTE stays the same and PITCH is a number from ONE to SEVEN.\n"
                             "Output the sequence solely as a comma-separated list with NOTE PITCH with no additional explanation.\n"
                         )
                     },
