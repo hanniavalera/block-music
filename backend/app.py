@@ -10,7 +10,15 @@ import uuid
 import requests
 
 # Setup initial configurations - make it like do, re, mi, fa, so, la, ti
-pitch_mappings = {'ONE': 261.63, 'TWO': 293.66, 'THREE': 329.63, 'FOUR': 349.23, 'FIVE': 392.00, 'SIX': 440.00, 'SEVEN': 493.88}
+pitch_mappings = {
+    'ONE': 130.81,  # C3
+    'TWO': 146.83,  # D3
+    'THREE': 164.81,  # E3
+    'FOUR': 174.61,  # F3
+    'FIVE': 196.00,  # G3
+    'SIX': 220.00,  # A3
+    'SEVEN': 246.94  # B3
+}
 default_pitch = 'ONE'
 
 app = Flask(__name__)
