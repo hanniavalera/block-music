@@ -38,15 +38,15 @@ const UploadImage = () => {
 
   return (
     <div>
-      <h1>Image to Music</h1>
+      <h1>Block Music</h1>
       <form onSubmit={handleSubmit}>
         <input type="file" onChange={handleFileChange} accept="image/*" />
-        <button type="submit">Upload and Process</button>
+        <button type="submit">Upload the File Here!</button>
       </form>
       {loading && <p>Loading...</p>}
       {musicUrl && (
         <div>
-          <h2>Generated Music</h2>
+          <h2>Generated Music, click to play!</h2>
           <button
             style={{
               fontSize: "2rem",
