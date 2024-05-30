@@ -52,7 +52,7 @@ def upload_file():
 
 def recognize_text_from_image(file_path):
     openai.api_key = os.getenv('OPENAI_API_KEY')
-    
+
     # Encode the image to base64
     with open(file_path, "rb") as image_file:
         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
@@ -71,12 +71,13 @@ def recognize_text_from_image(file_path):
                             "The language has the following elements: START, END, BEGIN LOOP, STOP LOOP, NOTE, PITCH, and REPEAT. "
                             "Here are the rules:\n"
                             "- The program starts with START and ends with END.\n"
+                            "- START can also have REPEAT specifying the number of times the program should be run in its entirety (ONE TO SEVEN).\n"
                             "- BEGIN LOOP specifies the start of a loop and can have an attached REPEAT specifying the number of iterations (ONE TO SEVEN).\n"
                             "- STOP LOOP marks the end of a loop.\n"
-                            "- NOTE specifies a musical note and can have an attached PITCH (ONE TO SEVEN).\n"
+                            "- NOTE specifies a musical note and may have an attached PITCH (ONE TO SEVEN), if not default to ONE.\n"
                             "- REPEAT specifies how many times a NOTE should be played (ONE TO SEVEN).\n"
                             "- The program is read from top to bottom, left to right, and there may be nested loops.\n"
-                            "- The notes within a loop should be played in order before moving to the next iteration.\n"
+                            "- The notes within a loop should be played in order until STOP LOOP or END, but the commands should be in order within said loop.\n"
                             "Please interpret the image, extract the notes and pitches that would result from running the program.\n"
                             "Provide a sequence of pairs in the format NOTE PITCH, in which NOTE stays the same and PITCH is a number from ONE to SEVEN.\n"
                             "Output the sequence solely as a comma-separated list with NOTE PITCH with no additional explanation.\n"
